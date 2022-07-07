@@ -144,8 +144,8 @@ impl WordleGame {
                     LetterInfo::Absent => {
                         e.push_str(
                             format!(
-                                "This letter should be absent: letter:{}, position:{}\n",
-                                letter, pos
+                                "Error at position: {}; This letter should be absent: letter {}\n",
+                                pos, letter
                             )
                             .as_str(),
                         );
@@ -154,8 +154,7 @@ impl WordleGame {
                     LetterInfo::Present(v) => {
                         if matches!(v[pos], PresentTypes::No) {
                             e.push_str(format!(
-                                    "This letter has already been checked here: letter:{}, position:{}\n Extra Debug: {:?}",
-                                    letter, pos, show_vec_present_types(v)
+                                    "Error at position: {pos}; This letter should not be here: letter:{letter}"
                                 ).as_str());
                             flag = true;
                         }
@@ -275,8 +274,8 @@ impl std::fmt::Display for WordleGame {
             .iter()
             .filter(|(_, info)| matches!(info, LetterInfo::Absent))
             .map(|(letter, _)| format!("{}", letter))
-            .fold(String::from("Absentees"), |mut acc, x| {
-                acc.push_str(",");
+            .fold(String::from("\nAbsentees"), |mut acc, x| {
+                acc.push_str(", ");
                 acc.push_str(x.as_str());
                 acc
             });
