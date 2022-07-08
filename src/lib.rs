@@ -13,6 +13,20 @@ enum PresentTypes {
     Yes,
 }
 
+impl std::fmt::Display for PresentTypes {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                PresentTypes::No => "n",
+                PresentTypes::Maybe => "m",
+                PresentTypes::Yes => "y",
+            }
+        )
+    }
+}
+
 ///LetterInfo is the enumeration storing all the information of a specific letter.
 ///
 /// A letter is either absent, or present; if present, we store the locational data also in a vector
@@ -25,17 +39,39 @@ enum LetterInfo {
     Present(Vec<PresentTypes>),
 }
 
+impl std::fmt::Display for LetterInfo {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                LetterInfo::Absent => String::new(),
+                LetterInfo::Present(p) => String::from_iter(p.iter().map(|x| x.to_string())),
+            }
+        )
+    }
+}
+
 ///GuessResult is an enum of the possible information wordle gives us after a guess
 ///
 /// ## Cases:
 /// 1. No: the letter is not present-> Black square
 /// 2. Yes: the letter is at that location -> Green Square
 /// 3. Somewhere: the letter is elsewhere -> Yellow Square
-#[derive(PartialEq)]
 enum GuessResult {
     No,
     Yes,
     Somewhere,
+}
+
+impl GuessResult {
+    fn from_char(c: char) -> GuessResult {
+        match c {
+            'y' => GuessResult::Yes,
+            'm' => GuessResult::Somewhere,
+            _ => GuessResult::No,
+        }
+    }
 }
 
 /// Generates a new vector for LetterType, with starting information
@@ -60,30 +96,13 @@ fn generate_new_vec(n: usize, p: usize, result: &GuessResult) -> Vec<PresentType
     return r;
 }
 
-///For Visualisation of Vec<PresentTypes>
-fn show_vec_present_types(v: &Vec<PresentTypes>) -> String {
-    v.iter()
-        .map(|x| match x {
-            PresentTypes::No => "0",
-            PresentTypes::Yes => "1",
-            PresentTypes::Maybe => "2",
-        })
-        .fold(String::from(""), |acc, x| acc + x)
-}
-
 ///
 ///  Converts a string to a vector of Guess Result, that is, you know, the black yellow and green of wordle to my enum implementation
 ///
 /// ## Example:
 /// word_to_result("ymnn")-> vec![Yes, Somewhere, No, No]
 fn word_to_result(word: &str) -> Vec<GuessResult> {
-    word.chars()
-        .map(|x| match x {
-            'y' => GuessResult::Yes,
-            'm' => GuessResult::Somewhere,
-            'n' | _ => GuessResult::No,
-        })
-        .collect()
+    word.chars().map(|x| GuessResult::from_char(x)).collect()
 }
 
 pub struct WordleGame {
@@ -154,7 +173,7 @@ impl WordleGame {
                     LetterInfo::Present(v) => {
                         if matches!(v[pos], PresentTypes::No) {
                             e.push_str(format!(
-                                    "Error at position: {pos}; This letter should not be here: letter:{letter}"
+                                    "Error at position: {pos}; This letter should not be here: letter:{letter}\n"
                                 ).as_str());
                             flag = true;
                         }
@@ -212,7 +231,7 @@ impl WordleGame {
                             letter,
                             LetterInfo::Present(generate_new_vec(self.num, position, result)),
                         );
-                        if *result == GuessResult::Yes {
+                        if matches!(result, GuessResult::Yes) {
                             change_flag(letter, position);
                         }
                     }
@@ -272,8 +291,8 @@ impl std::fmt::Display for WordleGame {
         let all_absent = self
             .information
             .iter()
-            .filter(|(_, info)| matches!(info, LetterInfo::Absent))
-            .map(|(letter, _)| format!("{}", letter))
+            .filter(|(_letter, info)| matches!(info, LetterInfo::Absent))
+            .map(|(letter, _info)| format!("{}", letter))
             .fold(String::from("\nAbsentees"), |mut acc, x| {
                 acc.push_str(", ");
                 acc.push_str(x.as_str());
@@ -282,11 +301,8 @@ impl std::fmt::Display for WordleGame {
         let all_present = self
             .information
             .iter()
-            .filter(|(_, info)| !matches!(info, LetterInfo::Absent))
-            .map(|(letter, info)| match info {
-                LetterInfo::Present(p) => format!("{}->{}", letter, show_vec_present_types(p)),
-                LetterInfo::Absent => format!(""),
-            })
+            .filter(|(_letter, info)| !matches!(info, LetterInfo::Absent))
+            .map(|(letter, info)| format!("{letter}->{}", info.to_string()))
             .fold(String::from(""), |mut acc, x| {
                 acc.push_str("\n");
                 acc.push_str(x.as_str());
